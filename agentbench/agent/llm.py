@@ -26,7 +26,16 @@ class LLMProvider(abc.ABC):
 _PROVIDERS: dict[str, type[LLMProvider]] = {}
 
 
+def _register_gemini() -> None:
+    if "gemini" not in _PROVIDERS:
+        from agentbench.agent.providers.gemini_provider import GeminiProvider
+
+        _PROVIDERS["gemini"] = GeminiProvider
+
+
 def get_provider(name: str, model: str) -> LLMProvider:
+    if name == "gemini":
+        _register_gemini()
     provider_cls = _PROVIDERS.get(name)
     if provider_cls is None:
         raise ValueError(f"Unknown provider: {name}")
