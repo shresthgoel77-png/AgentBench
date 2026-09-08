@@ -37,6 +37,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("task_id", help="Identifier of the task to run")
     _add_provider_flags(parser)
+    parser.add_argument(
+        "--runs",
+        type=int,
+        default=1,
+        help="Number of times to repeat the task run (default: 1)",
+    )
     return parser
 
 
@@ -66,6 +72,29 @@ def main(argv=None) -> int:
     args = build_parser().parse_args(argv)
     provider_name = args.provider or DEFAULT_PROVIDER
     model = args.model or DEFAULT_MODEL
+
+    if args.runs > 1:
+        results = []
+        for i in range(args.runs):
+            print(f"\n--- Run {i + 1}/{args.runs} ---")
+            result = runner.run_single_task(
+                args.task_id,
+                provider_name,
+                model,
+                keep_workspace=args.keep_workspace,
+                verbose=args.verbose,
+            )
+            results.append(result)
+        records = [
+            benchmark.record_from_result(args.task_id, r) for r in results
+        ]
+        aggregate = benchmark.aggregate_repeated_runs(records)
+        print(
+            "\n"
+            + benchmark.format_repeated_runs_summary(aggregate)
+        )
+        return 0 if aggregate["num_successful"] == aggregate["num_runs"] else 1
+
     result = runner.run_single_task(
         args.task_id,
         provider_name,
