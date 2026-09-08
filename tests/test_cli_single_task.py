@@ -4,6 +4,7 @@ import os
 import pytest
 
 import run
+from agentbench import runner
 from agentbench.agent.llm import LLMResponse
 
 
@@ -75,18 +76,18 @@ class TestPipeline:
 
         script = _script()
         monkeypatch.setattr(
-            run, "get_provider", lambda name, model: ScriptedProvider(script)
+            runner, "get_provider", lambda name, model: ScriptedProvider(script)
         )
 
         results_dir = tmp_path / "out"
-        code = run.run_single_task(
+        result = runner.run_single_task(
             "cli_test",
             "anthropic",
             "claude-3-5-sonnet-20241022",
             results_dir=str(results_dir),
         )
 
-        assert code == 0
+        assert result["evaluation"]["task_success"] is True
 
         output = capsys.readouterr().out
         assert "AGENTBENCH RUN REPORT" in output
@@ -111,11 +112,11 @@ class TestPipeline:
 
         script = _script()
         monkeypatch.setattr(
-            run, "get_provider", lambda name, model: ScriptedProvider(script)
+            runner, "get_provider", lambda name, model: ScriptedProvider(script)
         )
 
         results_dir = tmp_path / "out"
-        code = run.run_single_task(
+        result = runner.run_single_task(
             "cli_test",
             "anthropic",
             "claude-3-5-sonnet-20241022",
@@ -123,7 +124,7 @@ class TestPipeline:
             results_dir=str(results_dir),
         )
 
-        assert code == 0
+        assert result["evaluation"]["task_success"] is True
         files = sorted(results_dir.glob("*.json"))
         data = json.loads(files[0].read_text())
         run_id = data["run_id"]
@@ -135,11 +136,11 @@ class TestPipeline:
 
         script = _script()
         monkeypatch.setattr(
-            run, "get_provider", lambda name, model: ScriptedProvider(script)
+            runner, "get_provider", lambda name, model: ScriptedProvider(script)
         )
 
         results_dir = tmp_path / "out"
-        code = run.run_single_task(
+        result = runner.run_single_task(
             "cli_test",
             "anthropic",
             "claude-3-5-sonnet-20241022",
@@ -147,12 +148,12 @@ class TestPipeline:
             results_dir=str(results_dir),
         )
 
-        assert code == 0
+        assert result["evaluation"]["task_success"] is True
         output = capsys.readouterr().out
         assert "[step 1] write_file" in output
         assert "[step 2] run_tests" in output
 
-    def test_failed_task_exits_1(self, tmp_path, monkeypatch):
+    def test_failed_task_reports_failure(self, tmp_path, monkeypatch):
         task_dir = _write_fake_task(tmp_path)
         task_dir.joinpath("test_solution.py").write_text(
             "import solution\n"
@@ -163,18 +164,18 @@ class TestPipeline:
 
         script = _script()
         monkeypatch.setattr(
-            run, "get_provider", lambda name, model: ScriptedProvider(script)
+            runner, "get_provider", lambda name, model: ScriptedProvider(script)
         )
 
         results_dir = tmp_path / "out"
-        code = run.run_single_task(
+        result = runner.run_single_task(
             "cli_test",
             "anthropic",
             "claude-3-5-sonnet-20241022",
             results_dir=str(results_dir),
         )
 
-        assert code == 1
+        assert result["evaluation"]["task_success"] is False
 
 
 class TestCli:
@@ -187,3 +188,21 @@ class TestCli:
         assert "--provider" in out
         assert "--keep-workspace" in out
         assert "--verbose" in out
+
+    def test_failed_task_exits_1(self, tmp_path, monkeypatch, capsys):
+        _write_fake_task(tmp_path)
+        monkeypatch.setattr(
+            runner,
+            "run_single_task",
+            lambda *a, **k: {"evaluation": {"task_success": False}},
+        )
+        assert run.main(["cli_test"]) == 1
+
+    def test_successful_task_exits_0(self, tmp_path, monkeypatch, capsys):
+        _write_fake_task(tmp_path)
+        monkeypatch.setattr(
+            runner,
+            "run_single_task",
+            lambda *a, **k: {"evaluation": {"task_success": True}},
+        )
+        assert run.main(["cli_test"]) == 0
