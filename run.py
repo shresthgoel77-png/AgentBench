@@ -2,17 +2,13 @@
 import argparse
 import sys
 
-from agentbench import runner
+from agentbench import benchmark, runner
 
 DEFAULT_PROVIDER = "anthropic"
 DEFAULT_MODEL = "claude-3-5-sonnet-20241022"
 
 
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        description="AgentBench -- local benchmark runner"
-    )
-    parser.add_argument("task_id", help="Identifier of the task to run")
+def _add_provider_flags(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--model",
         default=None,
@@ -33,10 +29,40 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print each trajectory step as it is recorded",
     )
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="AgentBench -- local benchmark runner"
+    )
+    parser.add_argument("task_id", help="Identifier of the task to run")
+    _add_provider_flags(parser)
+    return parser
+
+
+def build_benchmark_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="AgentBench -- run every task under tasks/"
+    )
+    _add_provider_flags(parser)
     return parser
 
 
 def main(argv=None) -> int:
+    argv = list(sys.argv[1:] if argv is None else argv)
+
+    if argv and argv[0] == "benchmark":
+        args = build_benchmark_parser().parse_args(argv[1:])
+        provider_name = args.provider or DEFAULT_PROVIDER
+        model = args.model or DEFAULT_MODEL
+        benchmark.run_benchmark(
+            provider_name,
+            model,
+            keep_workspace=args.keep_workspace,
+            verbose=args.verbose,
+        )
+        return 0
+
     args = build_parser().parse_args(argv)
     provider_name = args.provider or DEFAULT_PROVIDER
     model = args.model or DEFAULT_MODEL
