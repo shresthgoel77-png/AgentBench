@@ -1,0 +1,7 @@
+correctness: 0.45
+efficiency: 0.15
+safety: 0.15
+recovery: 0.10
+cost: 0.05
+runtime: 0.05
+trajectory_quality: 0.05
