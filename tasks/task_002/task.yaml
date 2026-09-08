@@ -1,0 +1,15 @@
+id: task_002
+name: "Fix word counting with stray spaces"
+description: "count_words() returns an inflated count whenever the text contains repeated, leading, or trailing spaces. Make it split on any run of whitespace."
+tests:
+  command: "python3 -m pytest -q"
+permissions:
+  readable:
+    - solution.py
+    - test_solution.py
+  writable:
+    - solution.py
+limits:
+  max_steps: 10
+  max_runtime_seconds: 120
+  max_cost_usd: 1.0

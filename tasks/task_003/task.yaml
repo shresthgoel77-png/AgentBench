@@ -1,0 +1,15 @@
+id: task_003
+name: "Fix the even-length median"
+description: "median() returns the upper-middle element instead of the average of the two middle elements for even-length lists. Fix it so even-length inputs return the true median."
+tests:
+  command: "python3 -m pytest -q"
+permissions:
+  readable:
+    - solution.py
+    - test_solution.py
+  writable:
+    - solution.py
+limits:
+  max_steps: 10
+  max_runtime_seconds: 120
+  max_cost_usd: 1.0

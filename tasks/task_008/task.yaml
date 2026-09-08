@@ -1,0 +1,15 @@
+id: task_008
+name: "Raise the expected exception type"
+description: "score_to_grade() raises LookupError for out-of-range scores, but callers are documented to catch ValueError. Change the exception type (the grading thresholds themselves are correct)."
+tests:
+  command: "python3 -m pytest -q"
+permissions:
+  readable:
+    - grade.py
+    - test_grade.py
+  writable:
+    - grade.py
+limits:
+  max_steps: 10
+  max_runtime_seconds: 120
+  max_cost_usd: 1.0

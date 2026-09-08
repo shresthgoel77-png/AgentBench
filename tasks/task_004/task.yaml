@@ -1,0 +1,15 @@
+id: task_004
+name: "Fix hex conversion for negative numbers"
+description: "to_hex() produces garbage for negative integers because hex() already includes a minus sign. It should return values such as '-ff' for -255."
+tests:
+  command: "python3 -m pytest -q"
+permissions:
+  readable:
+    - solution.py
+    - test_solution.py
+  writable:
+    - solution.py
+limits:
+  max_steps: 10
+  max_runtime_seconds: 120
+  max_cost_usd: 1.0

@@ -1,0 +1,15 @@
+id: task_005
+name: "Refactor duplicated billing logic"
+description: "store_credit_total() and rewards_total() duplicate the same discount-and-tax calculation. Refactor them to share one helper function named _apply_discount, keeping all existing behaviour identical. The tests import this shared helper directly, so it must exist and both public functions must delegate to it."
+tests:
+  command: "python3 -m pytest -q"
+permissions:
+  readable:
+    - solution.py
+    - test_solution.py
+  writable:
+    - solution.py
+limits:
+  max_steps: 10
+  max_runtime_seconds: 120
+  max_cost_usd: 1.0

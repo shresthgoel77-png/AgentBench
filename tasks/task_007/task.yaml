@@ -1,0 +1,15 @@
+id: task_007
+name: "Parse compound durations fully"
+description: "to_seconds() only accepts a single unit such as '90s' or '2m'. It must also parse compound formats like '1h30m', '1h 30m', and '30m45s'. Be careful: a fix that only handles one compound shape will still fail some of the tests, so verify every listed format before finishing."
+tests:
+  command: "python3 -m pytest -q"
+permissions:
+  readable:
+    - duration.py
+    - test_duration.py
+  writable:
+    - duration.py
+limits:
+  max_steps: 10
+  max_runtime_seconds: 120
+  max_cost_usd: 1.0
