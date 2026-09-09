@@ -1,6 +1,4 @@
 from agentbench.tasks.schema import TaskSpec
-
-
 TOOL_SCHEMAS: list[dict] = [
     {
         "name": "read_file",
