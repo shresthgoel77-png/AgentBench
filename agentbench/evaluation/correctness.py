@@ -53,6 +53,8 @@ def _run_summary_command(workspace: Workspace, task: TaskSpec):
         )
     except subprocess.TimeoutExpired:
         return None
+    except (OSError, subprocess.SubprocessError):
+        return None
 
     combined = (proc.stdout or "") + "\n" + (proc.stderr or "")
     passed_match = _PASSED_RE.search(combined)

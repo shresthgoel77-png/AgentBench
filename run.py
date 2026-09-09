@@ -57,52 +57,62 @@ def build_benchmark_parser() -> argparse.ArgumentParser:
 def main(argv=None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
 
-    if argv and argv[0] == "benchmark":
-        args = build_benchmark_parser().parse_args(argv[1:])
-        provider_name = args.provider or DEFAULT_PROVIDER
-        model = args.model or DEFAULT_MODEL
-        benchmark.run_benchmark(
-            provider_name,
-            model,
-            keep_workspace=args.keep_workspace,
-            verbose=args.verbose,
-        )
-        return 0
-
-    args = build_parser().parse_args(argv)
-    provider_name = args.provider or DEFAULT_PROVIDER
-    model = args.model or DEFAULT_MODEL
-
-    if args.runs > 1:
-        results = []
-        for i in range(args.runs):
-            print(f"\n--- Run {i + 1}/{args.runs} ---")
-            result = runner.run_single_task(
-                args.task_id,
+    try:
+        if argv and argv[0] == "benchmark":
+            args = build_benchmark_parser().parse_args(argv[1:])
+            provider_name = args.provider or DEFAULT_PROVIDER
+            model = args.model or DEFAULT_MODEL
+            benchmark.run_benchmark(
                 provider_name,
                 model,
                 keep_workspace=args.keep_workspace,
                 verbose=args.verbose,
             )
-            results.append(result)
-        records = [
-            benchmark.record_from_result(args.task_id, r) for r in results
-        ]
-        aggregate = benchmark.aggregate_repeated_runs(records)
-        print(
-            "\n"
-            + benchmark.format_repeated_runs_summary(aggregate)
-        )
-        return 0 if aggregate["num_successful"] == aggregate["num_runs"] else 1
+            return 0
 
-    result = runner.run_single_task(
-        args.task_id,
-        provider_name,
-        model,
-        keep_workspace=args.keep_workspace,
-        verbose=args.verbose,
-    )
-    return 0 if result["evaluation"]["task_success"] else 1
+        args = build_parser().parse_args(argv)
+        provider_name = args.provider or DEFAULT_PROVIDER
+        model = args.model or DEFAULT_MODEL
+
+        if args.runs > 1:
+            results = []
+            for i in range(args.runs):
+                print(f"\n--- Run {i + 1}/{args.runs} ---")
+                result = runner.run_single_task(
+                    args.task_id,
+                    provider_name,
+                    model,
+                    keep_workspace=args.keep_workspace,
+                    verbose=args.verbose,
+                )
+                results.append(result)
+            records = [
+                benchmark.record_from_result(args.task_id, r) for r in results
+            ]
+            aggregate = benchmark.aggregate_repeated_runs(records)
+            print(
+                "\n"
+                + benchmark.format_repeated_runs_summary(aggregate)
+            )
+            return 0 if aggregate["num_successful"] == aggregate["num_runs"] else 1
+
+        result = runner.run_single_task(
+            args.task_id,
+            provider_name,
+            model,
+            keep_workspace=args.keep_workspace,
+            verbose=args.verbose,
+        )
+        return 0 if result["evaluation"]["task_success"] else 1
+    except FileNotFoundError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 2
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 2
+    except Exception as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 2
 
 
 if __name__ == "__main__":

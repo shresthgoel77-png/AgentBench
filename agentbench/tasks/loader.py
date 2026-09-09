@@ -11,7 +11,9 @@ def load_task(task_id: str, tasks_root: str = "tasks") -> TaskSpec:
     task_file = task_dir / "task.yaml"
 
     if not task_file.exists():
-        raise FileNotFoundError(f"task.yaml not found: {task_file}")
+        raise FileNotFoundError(
+            f"task not found: '{task_id}' (no {task_file} exists)"
+        )
 
     with open(task_file, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)

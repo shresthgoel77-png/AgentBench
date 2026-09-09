@@ -127,3 +127,75 @@ def test_permission_violation_recorded_and_loop_continues(workspace):
     assert actions[0]["error"] is not None
     assert "read access not allowed" in actions[0]["error"]
     assert actions[1]["error"] is None
+
+
+class _RaisingProvider:
+    def __init__(self, exc=RuntimeError("api quota exceeded")):
+        self.exc = exc
+
+    def generate(self, messages, tools, system):
+        raise self.exc
+
+
+def test_provider_error_stops_agent_and_is_recorded(workspace):
+    ws, task = workspace
+    perms = PermissionChecker(task)
+    recorder = TrajectoryRecorder()
+
+    provider = _RaisingProvider()
+
+    result = run_agent(task, ws, perms, provider, recorder)
+
+    assert result["finished"] is False
+    assert result["stop_reason"].startswith("provider_error:")
+    assert result["steps_taken"] == 1
+
+    actions = recorder.as_list()
+    assert len(actions) == 1
+    assert actions[0]["action"] == "provider_error"
+    assert "api quota exceeded" in actions[0]["error"]
+
+
+def test_provider_error_recorded_and_no_raw_traceback_leaks(workspace, capsys):
+    ws, task = workspace
+    perms = PermissionChecker(task)
+    recorder = TrajectoryRecorder()
+
+    provider = _RaisingProvider()
+
+    result = run_agent(task, ws, perms, provider, recorder)
+
+    assert result["finished"] is False
+    out = capsys.readouterr().out
+    assert "Traceback" not in out
+
+
+def test_git_diff_failure_recorded_as_trajectory_error(workspace, monkeypatch):
+    from agentbench.tools.gitdiff import GitDiffError
+
+    ws, task = workspace
+    perms = PermissionChecker(task)
+    recorder = TrajectoryRecorder()
+
+    def _broken_git_diff(workspace):
+        raise GitDiffError("git is not available")
+
+    monkeypatch.setattr(
+        "agentbench.agent.agent.gitdiff.get_git_diff", _broken_git_diff
+    )
+
+    provider = ScriptedProvider(
+        [
+            {"name": "get_git_diff", "arguments": {}},
+            {"name": "finish", "arguments": {}},
+        ]
+    )
+
+    result = run_agent(task, ws, perms, provider, recorder)
+
+    assert result["finished"] is True
+    actions = recorder.as_list()
+    assert len(actions) == 1
+    assert actions[0]["action"] == "get_git_diff"
+    assert actions[0]["error"] is not None
+    assert "git is not available" in actions[0]["error"]

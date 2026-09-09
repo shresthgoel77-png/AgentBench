@@ -46,21 +46,26 @@ class LocalWorkspace(Workspace):
         self._git_init(run_dir)
 
     def _git_init(self, run_dir: str) -> None:
-        subprocess.run(["git", "init", "-q", run_dir], check=True)
-        subprocess.run(
-            ["git", "-C", run_dir, "add", "-A"], check=True
-        )
-        env = {
-            "GIT_AUTHOR_NAME": "agentbench",
-            "GIT_AUTHOR_EMAIL": "agentbench@localhost",
-            "GIT_COMMITTER_NAME": "agentbench",
-            "GIT_COMMITTER_EMAIL": "agentbench@localhost",
-        }
-        subprocess.run(
-            ["git", "-C", run_dir, "commit", "-q", "-m", "baseline"],
-            check=True,
-            env=dict(os.environ, **env),
-        )
+        try:
+            subprocess.run(["git", "init", "-q", run_dir], check=True)
+            subprocess.run(
+                ["git", "-C", run_dir, "add", "-A"], check=True
+            )
+            env = {
+                "GIT_AUTHOR_NAME": "agentbench",
+                "GIT_AUTHOR_EMAIL": "agentbench@localhost",
+                "GIT_COMMITTER_NAME": "agentbench",
+                "GIT_COMMITTER_EMAIL": "agentbench@localhost",
+            }
+            subprocess.run(
+                ["git", "-C", run_dir, "commit", "-q", "-m", "baseline"],
+                check=True,
+                env=dict(os.environ, **env),
+            )
+        except (subprocess.SubprocessError, OSError) as exc:
+            raise RuntimeError(
+                f"git is not available to set up the workspace: {exc}"
+            ) from exc
 
     def cleanup(self) -> None:
         if self.keep:

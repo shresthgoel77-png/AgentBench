@@ -5,11 +5,17 @@ from agentbench.agent.prompts import TOOL_SCHEMAS, build_system_prompt
 from agentbench.tasks.schema import TaskSpec
 from agentbench.tools import filesystem, gitdiff, testing
 from agentbench.tools.filesystem import ToolExecutionError
+from agentbench.tools.gitdiff import GitDiffError
 from agentbench.tools.permissions import PermissionChecker
 from agentbench.trajectory.recorder import TrajectoryRecorder
 from agentbench.workspace.base import Workspace, WorkspaceSecurityError
 
-_TOOL_ERRORS = (PermissionError, ToolExecutionError, WorkspaceSecurityError)
+_TOOL_ERRORS = (
+    PermissionError,
+    ToolExecutionError,
+    WorkspaceSecurityError,
+    GitDiffError,
+)
 
 
 def run_agent(
@@ -36,7 +42,22 @@ def run_agent(
                 "steps_taken": steps,
             }
 
-        response = provider.generate(messages=messages, tools=TOOL_SCHEMAS, system=system)
+        try:
+            response = provider.generate(messages=messages, tools=TOOL_SCHEMAS, system=system)
+        except Exception as exc:
+            steps += 1
+            recorder.record_action(
+                step=steps,
+                action="provider_error",
+                arguments={},
+                result=None,
+                error=str(exc),
+            )
+            return {
+                "finished": False,
+                "stop_reason": f"provider_error: {exc}",
+                "steps_taken": steps,
+            }
 
         if response.tool_call is None:
             content = response.content if response.content is not None else ""

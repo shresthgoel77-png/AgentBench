@@ -35,3 +35,11 @@ def run_tests(workspace: Workspace, task: TaskSpec) -> dict:
             "stderr": stderr,
             "duration_ms": int((time.monotonic() - start) * 1000),
         }
+    except (OSError, subprocess.SubprocessError) as exc:
+        return {
+            "passed": False,
+            "return_code": None,
+            "stdout": None,
+            "stderr": f"test command could not be run: {exc}",
+            "duration_ms": int((time.monotonic() - start) * 1000),
+        }

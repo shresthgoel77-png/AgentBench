@@ -247,3 +247,32 @@ def test_cleanup_keeps_directory_when_keep_true(tmp_path, monkeypatch):
     assert os.path.isdir(ws.root_path)
     ws.cleanup()
     assert os.path.isdir(ws.root_path)
+
+
+def test_git_init_failure_raises_clear_error(tmp_path, monkeypatch):
+    from agentbench.tasks.schema import TaskSpec
+
+    task_dir, _ = _build_task(tmp_path, ["a.txt"])
+    spec = TaskSpec(
+        id="task_test",
+        name="x",
+        description="x",
+        test_command="pytest",
+        readable=["a.txt"],
+        writable=[],
+        max_steps=20,
+        max_runtime_seconds=300,
+        max_cost_usd=0.5,
+        task_dir=str(task_dir),
+    )
+
+    def _no_git(*a, **k):
+        raise FileNotFoundError("git: command not found")
+
+    monkeypatch.setattr("agentbench.workspace.local.subprocess.run", _no_git)
+    monkeypatch.chdir(tmp_path)
+    ws = LocalWorkspace()
+
+    with pytest.raises(RuntimeError) as excinfo:
+        ws.create(spec)
+    assert "git is not available" in str(excinfo.value)

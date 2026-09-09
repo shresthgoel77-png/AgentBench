@@ -1,3 +1,5 @@
+import subprocess
+
 import pytest
 
 from agentbench.tasks.schema import TaskSpec
@@ -50,3 +52,34 @@ def test_modified_file_appears_in_diff(workspace):
     assert "modified content" in result["diff_text"]
     assert "-original content" in result["diff_text"]
     assert "file.txt" in result["changed_files"]
+
+
+def test_missing_git_raises_clear_git_diff_error(workspace, monkeypatch):
+    ws, _ = workspace
+
+    def _no_git(*a, **k):
+        raise FileNotFoundError("git: command not found")
+
+    monkeypatch.setattr("agentbench.tools.gitdiff.subprocess.run", _no_git)
+
+    with pytest.raises(Exception) as excinfo:
+        get_git_diff(ws)
+    from agentbench.tools.gitdiff import GitDiffError
+
+    assert isinstance(excinfo.value, GitDiffError)
+    assert "git is not available" in str(excinfo.value)
+
+
+def test_nonzero_git_exit_raises_clear_git_diff_error(workspace, monkeypatch):
+    ws, _ = workspace
+
+    def _failing_git(*a, **k):
+        return subprocess.CompletedProcess(a[0], returncode=128, stdout=b"", stderr=b"")
+
+    monkeypatch.setattr("agentbench.tools.gitdiff.subprocess.run", _failing_git)
+
+    from agentbench.tools.gitdiff import GitDiffError
+
+    with pytest.raises(GitDiffError) as excinfo:
+        get_git_diff(ws)
+    assert "git commands failed" in str(excinfo.value)

@@ -93,3 +93,36 @@ def test_timeout_never_raises(tmp_path, task, monkeypatch):
     assert result["passed"] is False
     assert result["return_code"] is None
     assert "timed out" in result["stderr"]
+
+
+def test_subprocess_spawn_failure_returns_failed_result_not_raise(
+    tmp_path, task, monkeypatch
+):
+    spec = TaskSpec(
+        id="t",
+        name="x",
+        description="x",
+        test_command="python3 -m pytest -x",
+        readable=["test_pass.py"],
+        writable=[],
+        max_steps=20,
+        max_runtime_seconds=60,
+        max_cost_usd=1.0,
+        task_dir=str(task),
+    )
+    monkeypatch.chdir(tmp_path)
+    ws = LocalWorkspace()
+    ws.create(spec)
+
+    def _boom(*a, **k):
+        raise OSError("test binary could not be spawned")
+
+    monkeypatch.setattr("agentbench.tools.testing.subprocess.run", _boom)
+    try:
+        result = run_tests(ws, spec)
+    finally:
+        ws.cleanup()
+
+    assert result["passed"] is False
+    assert result["return_code"] is None
+    assert "could not be run" in result["stderr"]

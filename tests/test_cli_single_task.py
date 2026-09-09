@@ -206,3 +206,44 @@ class TestCli:
             lambda *a, **k: {"evaluation": {"task_success": True}},
         )
         assert run.main(["cli_test"]) == 0
+
+
+class TestCliErrorHandling:
+    def test_nonexistent_task_exits_nonzero_with_clear_message(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        monkeypatch.chdir(tmp_path)
+        assert run.main(["nonexistent_task"]) == 2
+        err = capsys.readouterr().err
+        assert "task not found" in err
+        assert "Traceback" not in err
+
+    def test_runner_failure_exits_nonzero_with_clear_message_no_traceback(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        _write_fake_task(tmp_path)
+        monkeypatch.chdir(tmp_path)
+
+        def _boom(*a, **k):
+            raise RuntimeError("provider unavailable")
+
+        monkeypatch.setattr(runner, "run_single_task", _boom)
+        assert run.main(["cli_test"]) == 2
+        err = capsys.readouterr().err
+        assert "Error: provider unavailable" in err
+        assert "Traceback" not in err
+
+    def test_provider_value_error_exits_nonzero_with_clear_message(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        _write_fake_task(tmp_path)
+        monkeypatch.chdir(tmp_path)
+
+        def _raise_value_error(*a, **k):
+            raise ValueError("Unknown provider: anthropic")
+
+        monkeypatch.setattr(runner, "run_single_task", _raise_value_error)
+        assert run.main(["cli_test"]) == 2
+        err = capsys.readouterr().err
+        assert "Unknown provider: anthropic" in err
+        assert "Traceback" not in err
