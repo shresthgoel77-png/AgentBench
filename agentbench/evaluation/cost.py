@@ -5,7 +5,7 @@ import yaml
 
 from agentbench.tasks.schema import TaskSpec
 
-_PRICING_PATH = Path(__file__).parent / "pricing.yaml"
+_PRICING_PATH = Path(__file__).parent.parent / "config" / "pricing.yaml"
 
 _BUILTIN_PRICING: dict[str, dict[str, float]] = {
     "default": {"input_per_1k": 0.0005, "output_per_1k": 0.0015},

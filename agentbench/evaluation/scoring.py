@@ -5,7 +5,7 @@ import yaml
 
 from agentbench.tasks.schema import TaskSpec
 
-_WEIGHTS_PATH = Path(__file__).parent / "weights.yaml"
+_WEIGHTS_PATH = Path(__file__).parent.parent / "config" / "weights.yaml"
 
 _REQUIRED_KEYS = [
     "correctness",

@@ -4,8 +4,8 @@ import sys
 
 from agentbench import benchmark, runner
 
-DEFAULT_PROVIDER = "anthropic"
-DEFAULT_MODEL = "claude-3-5-sonnet-20241022"
+DEFAULT_PROVIDER = "gemini"
+DEFAULT_MODEL = "gemini-2.5-pro"
 
 
 def _add_provider_flags(parser: argparse.ArgumentParser) -> None:
@@ -17,7 +17,7 @@ def _add_provider_flags(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--provider",
         default=None,
-        help="LLM provider name (default: anthropic)",
+        help="LLM provider name (default: gemini)",
     )
     parser.add_argument(
         "--keep-workspace",
