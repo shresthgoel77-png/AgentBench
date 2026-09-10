@@ -8,6 +8,7 @@ from agentbench.evaluation.evaluator import evaluate_run
 from agentbench.reporting.report import (
     build_json_result,
     format_human_report,
+    save_markdown_report,
     save_result,
 )
 from agentbench.tasks.loader import load_task
@@ -117,8 +118,10 @@ def run_single_task(
             task, agent_label, recorder.as_list(), evaluation, run_metadata
         )
         path = save_result(result, results_dir=results_dir)
+        md_path = save_markdown_report(result, results_dir=results_dir)
         if verbose:
             print(f"[saved] {path}")
+            print(f"[saved markdown] {md_path}")
 
         return result
     except Exception as exc:

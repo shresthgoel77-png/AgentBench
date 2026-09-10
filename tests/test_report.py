@@ -4,6 +4,8 @@ import os
 from agentbench.reporting.report import (
     build_json_result,
     format_human_report,
+    format_markdown_report,
+    save_markdown_report,
     save_result,
 )
 from agentbench.tasks.schema import TaskSpec
@@ -172,3 +174,62 @@ class TestSaveResult:
         )
         path = save_result(result, results_dir=str(target))
         assert os.path.isfile(path)
+
+
+class TestMarkdownReport:
+    def _result(self, task_success: bool = True, run_id: str = "eval_test_run_deadbeef") -> dict:
+        meta = {
+            "run_id": run_id,
+            "model": "gpt-4o",
+            "started_at": "2024-01-01T00:00:00",
+            "finished_at": "2024-01-01T00:00:10",
+            "runtime_seconds": 10.0,
+        }
+        return build_json_result(
+            _task(), "agent-one", _trajectory(), _evaluation(task_success), meta
+        )
+
+    def test_contains_required_findings(self) -> None:
+        report = format_markdown_report(self._result())
+        assert "# AgentBench Run Report" in report
+        assert "eval_test" in report
+        assert "agent-one" in report
+        assert "Task success**: PASS" in report
+        assert "100.00 / 100" in report
+
+    def test_lists_every_metric_score(self) -> None:
+        report = format_markdown_report(self._result())
+        for metric in [
+            "Correctness",
+            "Efficiency",
+            "Recovery",
+            "Safety",
+            "Cost",
+            "Runtime",
+            "Trajectory Quality",
+        ]:
+            assert f"| {metric} |" in report
+        assert "| **Overall** |" in report
+
+    def test_renders_failed_run(self) -> None:
+        report = format_markdown_report(self._result(task_success=False))
+        assert "Task success**: FAIL" in report
+        assert "0.00 / 100" in report
+
+    def test_includes_error_details(self) -> None:
+        result = self._result()
+        result["evaluation"]["error"] = "provider unavailable"
+        report = format_markdown_report(result)
+        assert "provider unavailable" in report
+
+    def test_saves_and_reloads_markdown(self, tmp_path) -> None:
+        result = self._result()
+        path = save_markdown_report(result, results_dir=str(tmp_path))
+
+        expected = str(tmp_path / "eval_test_eval_test_run_deadbeef.md")
+        assert path == expected
+        assert os.path.isfile(path)
+
+        with open(path, encoding="utf-8") as f:
+            reloaded = f.read()
+        assert reloaded == format_markdown_report(result)
